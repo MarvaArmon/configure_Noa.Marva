@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IV-WORKSPACE · מערכת עירוי אוטונומית</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Heebo:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="data/private.js"></script>
+<script src="assets/site.js"></script>
+<script src="data/components.js"></script>
+<script src="data/project.js"></script>
+</head>
+<body data-page="home">
+<header id="topbar"></header>
+
+<main class="page">
+  <section class="hero">
+    <div class="lab">IV-WORKSPACE · כלים אוטונומיים · HIT<span data-private="authors" data-prefix=" · "></span></div>
+    <h1>מערכת עירוי אוטונומית</h1>
+    <p>מערכת עירוי אוטונומית המלווה מטופלים, ומאפשרת להם התניידות חופשית בסביבת בית החולים.</p>
+  </section>
+
+  <div class="grid g4" id="stats" style="margin-top:34px"></div>
+
+  <section class="studio-block">
+    <div class="section-title">
+      <h2>הקונפיגורציה עם הרכיבים העדכניים</h2>
+      <p>הנעה C, 4 שקיות, 2 Plum Solo ומשאבת מזרק. סידור אוטומטי של ה-Layout Studio, הצעה ולא החלטה. אפשר להזיז, לסובב ולשמור.</p>
+      <a class="studio-full" href="studio/layout-studio.html" target="_blank" rel="noopener">מסך מלא ↗</a>
+    </div>
+    <iframe class="studio-frame" src="studio/layout-studio.html" title="IV Pole Layout Studio"></iframe>
+  </section>
+
+  <div class="grid g3 tiles" style="margin-top:34px">
+    <a class="card line" href="spec.html">
+      <div class="lab">01</div><h3>מסמך אפיון</h3>
+      <p>הבעיה, קהל היעד, מטרות, מה מחוץ לתחום, הפתרון והסיכונים. גרסה 2.</p>
+    </a>
+    <a class="card line" href="components.html">
+      <div class="lab">02</div><h3>רכיבים</h3>
+      <p>כל הרכיבים, מידות, משקל ומקור הנתון. כולל מה שירד.</p>
+    </a>
+    <a class="card line" href="studio/layout-studio.html" target="_blank" rel="noopener">
+      <div class="lab">03 ↗</div><h3>Layout Studio</h3>
+      <p>הכלי התלת-ממדי לסידור הרכיבים, במסך מלא.</p>
+    </a>
+    <a class="card line" href="references.html">
+      <div class="lab">04</div><h3>רפרנסים</h3>
+      <p>לוח השראה: תמונות, מה זה ולמה זה רלוונטי.</p>
+    </a>
+  </div>
+
+  <p class="foot" id="updated"></p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var D = window.SITE_DATA, esc = SITE.esc, kg = SITE.kg, P = D.PROJECT;
+  var total = D.COMPONENTS.reduce(function (s, c) {
+    return s + (c.group !== 'open' && c.weight != null ? c.weight * (c.qty || 1) : 0);
+  }, 0);
+
+  function tile(label, num, unit, sub) {
+    return '<div class="card stat"><div class="lab">' + esc(label) + '</div>' +
+      '<div class="num">' + esc(num) + (unit ? ' <small>' + esc(unit) + '</small>' : '') + '</div>' +
+      '<div class="sub">' + esc(sub) + '</div></div>';
+  }
+  document.getElementById('stats').innerHTML =
+    tile('גובה', '120', 'ס"מ', 'רוחב כולל כ-45 ס"מ') +
+    tile('משקל', kg(total), 'ק"ג', 'בלי שלד ומעטפת · לפי טבלת הרכיבים') +
+    tile('זמן עבודה', '4', 'שעות', 'לטעינה אחת') +
+    tile('רכיבים', D.COMPONENTS.filter(function (c) { return c.group !== 'open'; }).length, '', 'נבחרו · ' + D.DROPPED.length + ' ירדו בדרך');
+
+  document.getElementById('updated').textContent = 'עודכן לאחרונה: ' + P.updated;
+})();
+</script>
+</body>
+</html>
