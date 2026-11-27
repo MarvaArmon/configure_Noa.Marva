@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>רכיבים · IV-WORKSPACE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Heebo:wght@300;400;500;700&family=Space+Grotesk:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="data/private.js"></script>
+<script src="assets/site.js"></script>
+<script src="data/components.js"></script>
+</head>
+<body data-page="components">
+<header id="topbar"></header>
+
+<main class="page">
+  <div class="page-head">
+    <div>
+      <div class="lab" id="ver"></div>
+      <h1>רשימת רכיבים</h1>
+      <p id="system"></p>
+    </div>
+  </div>
+
+  <div class="grid g4" id="stats"></div>
+
+  <div class="toolbar">
+    <input class="search" id="q" type="search" placeholder="חיפוש: שם, דגם או מק״ט" aria-label="חיפוש">
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="tablewrap">
+    <table class="parts">
+      <thead>
+        <tr>
+          <th>מק״ט</th>
+          <th>רכיב</th>
+          <th>יצרן ודגם</th>
+          <th>מידות (מ״מ)</th>
+          <th>משקל ליח׳</th>
+          <th>כמות</th>
+          <th>משקל כולל</th>
+          <th>מקור הנתון</th>
+          <th>הערות</th>
+          <th>קישור</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+
+  <div class="section-title">
+    <h2>ירדו</h2>
+    <p>רכיבים שנבדקו ולא נבחרו. לתיעוד בלבד, לא נספרים בסיכום.</p>
+  </div>
+  <div class="tablewrap">
+    <table class="parts">
+      <thead>
+        <tr>
+          <th>שייך ל</th>
+          <th>רכיב</th>
+          <th>יצרן ודגם</th>
+          <th>מידות (מ״מ)</th>
+          <th>משקל ליח׳</th>
+          <th>כמות</th>
+          <th>למה ירד</th>
+          <th>מתי</th>
+        </tr>
+      </thead>
+      <tbody id="dropped"></tbody>
+    </table>
+  </div>
+
+  <p class="foot">מידות: מ"מ, אורך × רוחב × גובה · משקל: ק"ג · הנתונים מבוססים על אתרי היצרנים ועל IV Pole Layout Studio. לפני החלטה סופית כדאי לבדוק מול גיליון הנתונים העדכני של היצרן.</p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var D = window.SITE_DATA, esc = SITE.esc, kg = SITE.kg;
+  var query = '';
+
+  function lineTotal(c) { return c.weight == null ? null : c.weight * (c.qty || 1); }
+  function sum(list) { return list.reduce(function (s, c) { var t = lineTotal(c); return s + (t || 0); }, 0); }
+  /* רכיבים שנספרים במשקל: כל מה שלא "פתוח" */
+  var counted = D.COMPONENTS.filter(function (c) { return c.group !== 'open'; });
+
+  document.getElementById('ver').textContent = 'גרסה ' + D.componentsVersion;
+  document.getElementById('system').textContent = D.systemLabel;
+
+  function renderStats() {
+    var total = sum(counted);
+    var med = sum(counted.filter(function (c) { return c.group === 'med'; }));
+    var nOpen = D.COMPONENTS.filter(function (c) { return c.group === 'open'; }).length;
+    document.getElementById('stats').innerHTML =
+      tile('משקל כולל', kg(total), 'ק"ג', 'בלי שלד ומעטפת (עוד אין משקל)') +
+      tile('מתוכו ציוד רפואי', kg(med), 'ק"ג', Math.round(med / total * 100) + '% מהמשקל · 4 שקיות, 3 משאבות') +
+      tile('מספר רכיבים', D.COMPONENTS.length - nOpen, '', 'שנבחרו, בלי הפתוחים') +
+      tile('עוד לא נבחרו', nOpen, '', 'מטען, מפסק חירום, שלד ומעטפת');
+  }
+  function tile(label, num, unit, sub) {
+    return '<div class="card stat"><div class="lab">' + esc(label) + '</div>' +
+      '<div class="num">' + esc(num) + (unit ? ' <small>' + esc(unit) + '</small>' : '') + '</div>' +
+      '<div class="sub">' + esc(sub) + '</div></div>';
+  }
+
+  function links(c) {
+    return (c.link || []).map(function (l) {
+      return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.label) + '</a>';
+    }).join('<br>');
+  }
+
+  function matches(c) {
+    if (!query) return true;
+    var hay = [c.id, c.name, c.model, c.role, c.note].join(' ').toLowerCase();
+    return hay.indexOf(query) >= 0;
+  }
+
+  function renderRows() {
+    var html = '', shown = 0;
+    D.GROUPS.forEach(function (g) {
+      var all = D.COMPONENTS.filter(function (c) { return c.group === g.key; });
+      var list = all.filter(matches);
+      if (!list.length) return;
+      shown += list.length;
+      var gw = sum(all.filter(function (c) { return c.group !== 'open'; }));
+      html += '<tr class="grp"><td colspan="10">' + esc(g.label) +
+        (gw ? '<span class="gw"><b>' + kg(gw) + '</b> ק"ג</span>' : '') + '</td></tr>';
+      list.forEach(function (c) {
+        html += '<tr>' +
+          '<td class="id">' + esc(c.id) + '</td>' +
+          '<td><div class="nm">' + esc(c.name) + '</div>' + (c.role ? '<div class="role">' + esc(c.role) + '</div>' : '') + '</td>' +
+          '<td class="model" dir="auto">' + esc(c.model) + '</td>' +
+          '<td class="num">' + esc(c.size || '–') + '</td>' +
+          '<td class="num">' + kg(c.weight) + '</td>' +
+          '<td class="num">' + esc(c.qty) + '</td>' +
+          '<td class="num">' + kg(lineTotal(c)) + '</td>' +
+          '<td class="src">' + esc(c.source || '–') + '</td>' +
+          '<td class="note">' + esc(c.note) + '</td>' +
+          '<td class="lnk">' + links(c) + '</td>' +
+        '</tr>';
+      });
+    });
+    document.getElementById('rows').innerHTML = html ||
+      '<tr><td colspan="10" class="empty">לא נמצאו רכיבים. אפשר לנקות את החיפוש.</td></tr>';
+    document.getElementById('count').textContent = 'מוצגים ' + shown + ' מתוך ' + D.COMPONENTS.length;
+  }
+
+  function renderDropped() {
+    document.getElementById('dropped').innerHTML = D.DROPPED.map(function (c) {
+      return '<tr class="dropped">' +
+        '<td class="id">' + esc(c.id) + '</td>' +
+        '<td class="nm">' + esc(c.name) + '</td>' +
+        '<td class="model" dir="auto">' + esc(c.model) + '</td>' +
+        '<td class="num">' + esc(c.size) + '</td>' +
+        '<td class="num">' + kg(c.weight) + '</td>' +
+        '<td class="num">' + esc(c.qty) + '</td>' +
+        '<td class="note">' + esc(c.why) + '</td>' +
+        '<td class="num">' + esc(c.when || '–') + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  document.getElementById('q').addEventListener('input', function (e) {
+    query = e.target.value.trim().toLowerCase();
+    renderRows();
+  });
+
+  renderStats();
+  renderRows();
+  renderDropped();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# קובצי עבודה פנימיים, לא חלק מהאתר
+*.md
+docs/
+build-single-file.ps1
+data/private.js
