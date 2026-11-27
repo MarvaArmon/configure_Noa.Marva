@@ -3,3 +3,4 @@
 docs/
 build-single-file.ps1
 data/private.js
+studio/sync-key.local.js
